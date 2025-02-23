@@ -1,4 +1,103 @@
-## C Api
+## About
+
+These are utility programs for running other programs. Check the files under
+the `release` folder. `CMD.reg` is an example use case for these programs.
+
+`Run.exe` runs a program normally with command line arguments and optional
+working directory.
+
+`Elevate.exe` tries to run a program with administrator privileges, along with
+command line arguments and optional working directory.
+
+There are only three valid ways to run either. The order of arguments matters.
+
+```cmd
+Run <program> [<program arguments>]
+Run /d <working directory> <program> [<program arguments>]
+Run -d <working directory> <program> [<program arguments>]
+```
+
+```cmd
+Elevate <program> [<program arguments>]
+Elevate /d <working directory> <program> [<program arguments>]
+Elevate -d <working directory> <program> [<program arguments>]
+```
+
+Arguments wrapped in `<>` are placeholders. Replace them along with the `<>`
+with the actual values you want to use.
+
+Arguments wrapped in `[]` are optional. They may be omitted.
+
+`<working directory>` must be a directory path, and must follow the `/d` or
+`-d` argument. The `/d` or `-d` must be the first argument, and the working
+directory path must be the second argument.
+
+`<program>` must be a program path or a program alias. Aliases can be set up
+through the registry or 3rd party programs. This must be the fist argument or
+the third argument.
+
+`[<program arguments>]` are the optional command line arguments that you would
+normally supply when running `<program>` from the terminal, and must follow the
+`<program>` argument. This must be the second argument or the fourth argument.
+
+## Copyright & License
+
+**TL;DR:**
+
+> This code is truly free and open source, licensed under the Apache 2.0 License. If you make a copy, **I humbly ask** that you include the text from the `NOTICE` file somewhere in your project. **_You are not required to!_** You are also not required to include the original `LICENSE-APACHE` or `NOTICE` files, and I would prefer just a copy of the `NOTICE` file text or a link to this repository instead. You can use and modify this code however you like, including using a proprietary license for your changes. The only restriction I maintain is under clause 3 of the Apache 2.0 License regarding patents. If you find any potential license violations, please contact me so that I may resolve them.
+
+---
+
+**Full Disclosure**
+
+- _mission_
+
+The code in this repository will always be truly free and open source (unless I myself have somehow violated an upstream copyright license, in which case I will gladly try to resolve any issues in a timely manner; please email me about any potential license violations you find).
+
+- _please leave a trail_
+
+When making a copy of this project, I _kindly ask_ that you include the text within the `NOTICE` file somewhere (perhaps in your own README.md or LICENSE or NOTICE file?) or a link to this repository so that other readers of your project may also be able to find this original template.
+
+```
+CXX RunElevate
+https://github.com/ericchase/cxx--run-elevate
+
+Copyright © 2025 ericchase
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+- _your usage of this source code_
+
+That said, this license and copyright notice **DOES NOT** restrict your usage of this template in any way, except for the terms and conditions under clause 3 of the Apache 2.0 License regarding patents: `3. Grant of Patent License.` As you may or may not know, every piece of work is automatically protected and restricted by **copyright** law. The purpose of a **license** is to "unrestrict" the copyright owner's protections under that law, granting others access to use their work. The **patent system**, on the other hand, is a system for **applying restrictions** to the implementation of ideas. Specifically:
+
+> A patent is a type of intellectual property that gives its owner the legal right to exclude others from making, using, or selling an invention for a limited period of time in exchange for publishing an enabling disclosure of the invention. - https://en.wikipedia.org/wiki/Patent
+
+- _patent law_
+
+I don't know enough about patent law to know if this could ever become an issue, but I would rather be safe than sorry. What I do know is that copyright law and patent law are completely separate issues, and copyright law does not protect your work from patents (AFAIK). The Apache 2.0 License does its best to provide some protections from patents of derivative works, which is why I use it for my projects.
+
+- _other terms and conditions_
+
+To reiterate, I hereby informally waive the other terms and conditions under the Apache 2.0 License. You are not required to include the original `LICENSE-APACHE` or `NOTICE` files or text in your derivative work.
+
+- _your derivative works_
+
+As for your own projects, any new additions and/or modifications you make **ARE NOT** subject to my license and copyright notice. You do not need to mention additions and/or modifications to the original source code. You will need to apply your own license and copyright notices if you wish to make your project code open source. If you wish to keep your source code private, you may do so. You may use a proprietary and/or closed source license if you wish. All of this is entirely up to you.
+
+_This is what it means to be truly free and open source._
+
+## Quick C API Reference
 
 ### malloc
 
