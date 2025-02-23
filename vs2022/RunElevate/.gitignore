@@ -1,0 +1,13 @@
+.vs
+
+# ignore all files except for .exe
+# **
+# !**/
+# !**/*.exe
+
+# ignore all files under Debug and Release
+**/Debug/**
+**/Release/**
+
+# unignore .exe files under x64
+# !/x64/**/*.exe
