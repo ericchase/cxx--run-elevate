@@ -6,7 +6,7 @@
 
 #include "Test.h"
 
-void Test_Lib()
+void Test_Lib(void)
 {
   label("FreeCommandLineArgsW");
   {
@@ -139,10 +139,103 @@ void Test_Lib()
     check("argv[0] should equal 'C:\\'", TRUE == wcs_equals(clean0, L"C:\\"));
     check("argv[1] should equal 'C:\\'", TRUE == wcs_equals(clean1, L"C:\\"));
     check("argv[2] should equal 'C:\\path\\to\\file.txt'", TRUE == wcs_equals(clean2, L"C:\\path\\to\\file.txt"));
-    free(clean0);
-    free(clean1);
-    free(clean2);
+    memory_free(&clean0);
+    memory_free(&clean1);
+    memory_free(&clean2);
 
     FreeCommandLineArgsW(&argv, &argc);
+  }
+
+  label("JoinArgsW");
+  {
+    size_t item_count = 0;
+    wchar_t **item_list = NULL;
+    item_list = SplitDelimitedListW(L"one,two,three", &item_count, L',');
+    check("3 arg. (item_count)", 3 == item_count);
+    check("3 arg. (item_list) 0", ArgEqualsW(item_list, item_count, 0, L"one"));
+    check("3 arg. (item_list) 1", ArgEqualsW(item_list, item_count, 1, L"two"));
+    check("3 arg. (item_list) 2", ArgEqualsW(item_list, item_count, 2, L"three"));
+    wchar_t *joined = JoinArgsW(item_list, item_count, L",", 14);
+    check("3 arg. check joined", TRUE == wcs_equals(joined, L"one,two,three"));
+    memory_free(&joined);
+    FreeCommandLineArgsW(&item_list, &item_count);
+  }
+
+  label("RemoveFromArgsW");
+  {
+    size_t item_count = 0;
+    wchar_t **item_list = NULL;
+
+    item_list = SplitDelimitedListW(L"one,two,three", &item_count, L',');
+    check("3 arg different. (item_count)", 3 == item_count);
+    check("3 arg different. (item_list) 0", ArgEqualsW(item_list, item_count, 0, L"one"));
+    check("3 arg different. (item_list) 1", ArgEqualsW(item_list, item_count, 1, L"two"));
+    check("3 arg different. (item_list) 2", ArgEqualsW(item_list, item_count, 2, L"three"));
+    check("should remove 1 item", 1 == RemoveFromArgsW(item_list, item_count, L"one"));
+    check("should remove 1 item", 1 == RemoveFromArgsW(item_list, item_count, L"two"));
+    check("should remove 1 item", 1 == RemoveFromArgsW(item_list, item_count, L"three"));
+    check("nothing left to join", NULL == JoinArgsW(item_list, item_count, L",", 0));
+    FreeCommandLineArgsW(&item_list, &item_count);
+
+    item_list = SplitDelimitedListW(L"one,one,one", &item_count, L',');
+    check("3 arg same. (item_count)", 3 == item_count);
+    check("3 arg same. (item_list) 0", ArgEqualsW(item_list, item_count, 0, L"one"));
+    check("3 arg same. (item_list) 1", ArgEqualsW(item_list, item_count, 1, L"one"));
+    check("3 arg same. (item_list) 2", ArgEqualsW(item_list, item_count, 2, L"one"));
+    check("should remove 3 items", 3 == RemoveFromArgsW(item_list, item_count, L"one"));
+    check("nothing left to join", NULL == JoinArgsW(item_list, item_count, L",", 0));
+    FreeCommandLineArgsW(&item_list, &item_count);
+  }
+
+  label("SearchArgsW");
+  {
+    size_t item_count = 0;
+    wchar_t **item_list = NULL;
+    item_list = SplitDelimitedListW(L"one,two,three", &item_count, L',');
+    check("3 arg. (item_count)", 3 == item_count);
+    check("should find arg", TRUE == SearchArgsW(item_list, item_count, L"one"));
+    check("should find arg", TRUE == SearchArgsW(item_list, item_count, L"two"));
+    check("should find arg", TRUE == SearchArgsW(item_list, item_count, L"three"));
+    FreeCommandLineArgsW(&item_list, &item_count);
+  }
+
+  label("RemoveFromDelimitedListW");
+  {
+    wchar_t *result = RemoveFromDelimitedListW(L"one,two,three", L',', L"one");
+    check("3 arg different. remove one", TRUE == wcs_equals(result, L"two,three"));
+    memory_free(&result);
+  }
+  {
+    wchar_t *result = RemoveFromDelimitedListW(L"one,two,three", L',', L"two");
+    check("3 arg different. remove two", TRUE == wcs_equals(result, L"one,three"));
+    memory_free(&result);
+  }
+  {
+    wchar_t *result = RemoveFromDelimitedListW(L"one,two,three", L',', L"three");
+    check("3 arg different. remove three", TRUE == wcs_equals(result, L"one,two"));
+    memory_free(&result);
+  }
+  {
+    wchar_t *result = RemoveFromDelimitedListW(L"one,one,two", L',', L"one");
+    check("3 arg, 2 same. remove one", TRUE == wcs_equals(result, L"two"));
+    memory_free(&result);
+  }
+  {
+    wchar_t *result = RemoveFromDelimitedListW(L"one,one,two", L',', L"two");
+    check("3 arg, 2 same. remove two", TRUE == wcs_equals(result, L"one,one"));
+    memory_free(&result);
+  }
+  {
+    check("3 arg same. remove all returns NULL", NULL == RemoveFromDelimitedListW(L"one,one,one", L',', L"one"));
+    check("3 arg same. remove none returns NULL", NULL == RemoveFromDelimitedListW(L"one,one,one", L',', L"two"));
+    check("3 arg different. remove none returns NULL", NULL == RemoveFromDelimitedListW(L"one,two,three", L',', L"four"));
+  }
+
+  label("SearchDelimitedListW");
+  {
+    check("3 arg different. contains one", TRUE == SearchDelimitedListW(L"one,two,three", L',', L"one"));
+    check("3 arg different. contains two", TRUE == SearchDelimitedListW(L"one,two,three", L',', L"two"));
+    check("3 arg different. contains three", TRUE == SearchDelimitedListW(L"one,two,three", L',', L"three"));
+    check("3 arg different. does not contain four", FALSE == SearchDelimitedListW(L"one,two,three", L',', L"four"));
   }
 }

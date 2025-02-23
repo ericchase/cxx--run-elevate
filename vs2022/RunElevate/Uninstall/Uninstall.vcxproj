@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\Headers.h" />
+    <ClInclude Include="..\..\..\src\Installation.h" />
     <ClInclude Include="..\..\..\src\Lib.CommandLineArgs.h" />
     <ClInclude Include="..\..\..\src\Lib.PointerManager.h" />
     <ClInclude Include="..\..\..\src\Lib.Standard.h" />

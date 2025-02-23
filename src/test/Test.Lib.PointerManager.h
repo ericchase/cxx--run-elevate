@@ -4,7 +4,7 @@
 
 #include "Test.h"
 
-void Test_Lib_PointerManager()
+void Test_Lib_PointerManager(void)
 {
   label("PointerManager Basic");
   {
@@ -119,11 +119,11 @@ void Test_Lib_PointerManager()
         check("(init_length = 2) pointer2[0] should be L'2'", L'2' == pointer2[0]);
         check("(init_length = 2) pointer3[0] should be L'3'", L'3' == pointer3[0]);
 
-        free(pointers);
+        memory_free((void *)&pointers);
 
-        free(pointer1);
-        free(pointer2);
-        free(pointer3);
+        memory_free(&pointer1);
+        memory_free(&pointer2);
+        memory_free(&pointer3);
       }
     }
   }

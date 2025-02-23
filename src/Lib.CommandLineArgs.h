@@ -123,19 +123,19 @@ wchar_t **ParseCommandLineArgsW(wchar_t *pCmdLine, size_t *pNumArgs)
  *
  * Use `FreeCommandLineArgsW` to free the allocated memory returned.
  *
- * @param pList delimited string to split into substrings
+ * @param pStr delimited string to split into substrings
  * @param pNumItems address of variable in which to store the number of valid
  * substrings split from the delimited string
  * @param delimiter the character by which to split the delimited string (may
  * not be the null character `\0`)
  */
-wchar_t **SplitDelimitedListW(wchar_t *pList, size_t *pNumItems, wchar_t delimiter)
+wchar_t **SplitDelimitedListW(wchar_t *pStr, size_t *pNumItems, wchar_t delimiter)
 {
-  wchar_t **argv = NULL;
+  wchar_t **items = NULL;
   pPointerManager manager = NULL;
 
   int code = 0;
-  if (NULL == pList || L'\0' == pList[0] || NULL == pNumItems)
+  if (NULL == pStr || L'\0' == pStr[0] || NULL == pNumItems)
   {
     code = -1;
   }
@@ -153,9 +153,9 @@ wchar_t **SplitDelimitedListW(wchar_t *pList, size_t *pNumItems, wchar_t delimit
 
     size_t arg_start = 0;
     size_t arg_index = 0;
-    for (; L'\0' != pList[arg_index]; ++arg_index)
+    for (; L'\0' != pStr[arg_index]; ++arg_index)
     {
-      if (delimiter == pList[arg_index])
+      if (delimiter == pStr[arg_index])
       {
         size_t const arg_length = arg_index - arg_start;
         if (arg_length > 0)
@@ -165,7 +165,7 @@ wchar_t **SplitDelimitedListW(wchar_t *pList, size_t *pNumItems, wchar_t delimit
           {
             goto breakout;
           }
-          memcpy(arg, pList + arg_start, arg_length * sizeof(wchar_t));
+          memcpy(arg, pStr + arg_start, arg_length * sizeof(wchar_t));
           if (ERROR == PointerManager_AddPointer(manager, arg))
           {
             free(arg);
@@ -183,7 +183,7 @@ wchar_t **SplitDelimitedListW(wchar_t *pList, size_t *pNumItems, wchar_t delimit
       {
         goto breakout;
       }
-      memcpy(arg, pList + arg_start, arg_length * sizeof(wchar_t));
+      memcpy(arg, pStr + arg_start, arg_length * sizeof(wchar_t));
       if (ERROR == PointerManager_AddPointer(manager, arg))
       {
         free(arg);
@@ -192,12 +192,12 @@ wchar_t **SplitDelimitedListW(wchar_t *pList, size_t *pNumItems, wchar_t delimit
     }
 
     *pNumItems = manager->item_count;
-    argv = (wchar_t **)manager->array;
+    items = (wchar_t **)manager->array;
     PointerManager_ReleasePointers(manager);
   }
 
   PointerManager_Delete(&manager);
-  return argv;
+  return items;
 }
 
 /**
@@ -290,6 +290,147 @@ wchar_t *ArgGetCleanPathW(wchar_t **argv, size_t argc, size_t index)
   wchar_t *clean_path = StringBuilderW_GetString(builder);
   StringBuilderW_Delete(&builder);
   return clean_path;
+}
+
+/**
+ * Joins a list of `wchar_t*`, separating each by the provided `separator`
+ * string.
+ *
+ * Use `free` to free the returned string.
+ *
+ * @param argv array of arguments
+ * @param argc number of arguments in array
+ * @param separator the string used to separate each argument
+ * @param init_length number of characters to reserve for builder at start
+ */
+wchar_t *JoinArgsW(wchar_t **argv, size_t argc, wchar_t *separator, size_t init_length)
+{
+  wchar_t *joined = NULL;
+  if (NULL != argv)
+  {
+    pStringBuilderW builder = StringBuilderW_New(init_length);
+    size_t start = 0;
+    while (start < argc && NULL == argv[start])
+    {
+      ++start;
+    }
+    StringBuilderW_Append(builder, argv[start]);
+    for (size_t index = start + 1; index < argc; ++index)
+    {
+      if (NULL != argv[index])
+      {
+        StringBuilderW_Append(builder, separator);
+        StringBuilderW_Append(builder, argv[index]);
+      }
+    }
+    joined = StringBuilderW_GetString(builder);
+    StringBuilderW_Delete(&builder);
+  }
+  return joined;
+}
+
+/**
+ * Removes target string from arguments.
+ * Returns the count of items removed.
+ *
+ * @param argv array of arguments
+ * @param argc number of arguments in array
+ * @param query the string to remove
+ */
+size_t RemoveFromArgsW(wchar_t **argv, size_t argc, wchar_t *query)
+{
+  size_t count = 0;
+  if (NULL != argv && NULL != query)
+  {
+    for (size_t index = 0; index < argc; ++index)
+    {
+      if (TRUE == wcs_equals(argv[index], query))
+      {
+        memory_free(&((void *)argv[index]));
+        ++count;
+      }
+    }
+  }
+  return count;
+}
+
+/**
+ * Searches arguments for target string.
+ *
+ * @param argv array of arguments
+ * @param argc number of arguments in array
+ * @param query the string to search for
+ */
+BOOL SearchArgsW(wchar_t **argv, size_t argc, wchar_t *query)
+{
+  if (NULL != argv && NULL != query)
+  {
+    for (size_t index = 0; index < argc; ++index)
+    {
+      if (TRUE == wcs_equals(argv[index], query))
+      {
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Calls `SplitDelimitedListW`, `RemoveFromArgsW`, `JoinArgsW`, and returns
+ * resulting string.
+ *
+ * Use `free` to free the returned string.
+ *
+ * @param pStr delimited string to split into substrings
+ * @param delimiter the character by which to split the delimited string (may
+ * not be the null character `\0`)
+ * @param query the string to search for
+ */
+wchar_t *RemoveFromDelimitedListW(wchar_t *pStr, wchar_t delimiter, wchar_t *query)
+{
+  wchar_t *joined = NULL;
+  if (NULL != pStr && NULL != query)
+  {
+    size_t item_count = 0;
+    wchar_t **items = SplitDelimitedListW(pStr, &item_count, delimiter);
+    size_t remove_count = RemoveFromArgsW(items, item_count, query);
+    if (0 != remove_count)
+    {
+      wchar_t separator[2] = {delimiter, L'\0'};
+      joined = JoinArgsW(items, item_count, separator, wcslen(pStr));
+    }
+    FreeCommandLineArgsW(&items, &item_count);
+  }
+  return joined;
+}
+
+/**
+ * Calls `SplitDelimitedListW` and searches resulting items for target string.
+ *
+ * @param pStr delimited string to split into substrings
+ * @param delimiter the character by which to split the delimited string (may
+ * not be the null character `\0`)
+ * @param query the string to search for
+ */
+BOOL SearchDelimitedListW(wchar_t *pStr, wchar_t delimiter, wchar_t *query)
+{
+  BOOL found = FALSE;
+  if (NULL != pStr && NULL != query)
+  {
+    size_t item_count = 0;
+    wchar_t **items = SplitDelimitedListW(pStr, &item_count, delimiter);
+    for (size_t index = 0; index < item_count; ++index)
+    {
+      if (TRUE == wcs_equals(items[index], query))
+      {
+        found = TRUE;
+        break;
+      }
+    }
+    FreeCommandLineArgsW(&items, &item_count);
+  }
+  return found;
 }
 
 #endif /* _Lib_CommandLineArgs_h_ */

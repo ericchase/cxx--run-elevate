@@ -35,5 +35,8 @@
     <ClInclude Include="..\..\..\src\Lib.StringBuilderW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\Installation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

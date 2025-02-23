@@ -4,7 +4,7 @@
 
 #include "Test.h"
 
-void Test_Lib_StringBuilderW()
+void Test_Lib_StringBuilderW(void)
 {
   label("StringBuilderW");
   {
@@ -52,7 +52,7 @@ void Test_Lib_StringBuilderW()
       StringBuilderW_Delete(&builder);
       check("returned string should not be NULL", NULL != str);
       check("returned string should be 'abc'", NULL != str && 0 == wcscmp(L"abc", str));
-      free(str);
+      memory_free(&str);
     }
 
     label("StringBuilderW_New");
@@ -75,7 +75,6 @@ void Test_Lib_StringBuilderW()
   }
   {
     pStringBuilderW builder = StringBuilderW_From(L"   \"\"\"abc\"\"\"   ");
-    wchar_t *str = NULL;
 
     label("StringBuilderW_Trim");
     check("(container = NULL) should return ERROR", ERROR == StringBuilderW_Trim(NULL, L' '));

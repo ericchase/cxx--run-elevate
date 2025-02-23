@@ -9,8 +9,6 @@ The installer will create a folder under `C:\Program Files` and copy these
 files to it:
 - Elevate.exe
 - Run.exe
-- Uninstall.exe
-- Uninstall.exe.manifest
 - vcruntime140.dll
 
 It will also add system wide aliases for both Run.exe and Elevate.exe, and then
@@ -39,8 +37,6 @@ right-clicking it and selecting "Run as administrator".
 The uninstaller will delete these files from the installation folder:
 - Elevate.exe
 - Run.exe
-- Uninstall.exe
-- Uninstall.exe.manifest
 - vcruntime140.dll
 
 It will also delete the installation folder itself is able, remove the system

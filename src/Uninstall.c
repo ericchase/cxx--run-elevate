@@ -1,132 +1,122 @@
 #include "Headers.h"
+#include "Installation.h"
 #include "Lib.StringBuilderW.h"
 #include "Lib.CommandLineArgs.h"
 
-int main(void)
+static int DeleteSystemAliases(void)
 {
+  int code = 0;
+
+  int result = 0;
+  if (
+      printf("Registry: Delete Key: HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Elevate.exe\n"),
+      result = RegDeleteKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Elevate.exe", 0, 0),
+      0 != result && ERROR_FILE_NOT_FOUND != result)
+  {
+    code = -1;
+    SetLastError(result);
+    PrintLastError(code);
+  }
+
+  SetLastError(0);
+  if (
+      printf("Registry: Delete Key: HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Run.exe\n"),
+      result = RegDeleteKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Run.exe", 0, 0),
+      0 != result && ERROR_FILE_NOT_FOUND != result)
+  {
+    code = -2;
+    SetLastError(result);
+    PrintLastError(code);
+  }
+
+  return code;
+}
+
+static int RemoveFromSystemPath(void)
+{
+  int code = 0;
+
   HKEY hKey = NULL;
+  DWORD size = 0;
+  wchar_t *path = NULL;
 
-  // Delete binary files from installation folder.
+  if (
+      printf("Registry: Open Key: HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\n"),
+      0 != RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment", 0, KEY_SET_VALUE | KEY_QUERY_VALUE, &hKey))
   {
-    // RunElevate | Elevate.exe
-    printf("Delete File: \"C:\\Program Files\\RunElevate\\Elevate.exe\"\n");
-    if (0 == DeleteFile(L"C:\\Program Files\\RunElevate\\Elevate.exe"))
-    {
-      printf("Error: Failed to delete Elevate.exe from installation folder.\n");
-    }
-    // RunElevate | Run.exe
-    printf("Delete File: \"C:\\Program Files\\RunElevate\\Run.exe\"\n");
-    if (0 == DeleteFile(L"C:\\Program Files\\RunElevate\\Run.exe"))
-    {
-      printf("Error: Failed to delete Run.exe from installation folder.\n");
-    }
-    // RunElevate | vcruntime140.dll
-    printf("Delete File: \"C:\\Program Files\\RunElevate\\vcruntime140.dll\"\n");
-    if (0 == DeleteFile(L"C:\\Program Files\\RunElevate\\vcruntime140.dll"))
-    {
-      printf("Error: Failed to delete vcruntime140.dll from installation folder.\n");
-    }
-    // RunElevate
-    printf("Remove Directory: \"C:\\Program Files\\RunElevate\"\n");
-    if (0 == RemoveDirectory(L"C:\\Program Files\\RunElevate"))
-    {
-      printf("Error: Failed to delete installation folder.\n");
-    }
+    code = -1;
   }
-
-  // Delete registry keys.
+  else if (
+      printf("Get size of path.\n"),
+      0 != RegQueryValueExW(hKey, L"Path", NULL, NULL, NULL, &size) || 0 == size)
   {
-    printf("Registry: Delete Key: HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Elevate.exe\n");
-    if (ERROR_SUCCESS != RegDeleteKey(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Elevate.exe"))
-    {
-      printf("Error: Failed to delete registry key for Elevate.exe.\n");
-    }
-    printf("Registry: Delete Key: HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Run.exe\n");
-    if (ERROR_SUCCESS != RegDeleteKey(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Run.exe"))
-    {
-      printf("Error: Failed to delete registry key for Run.exe.\n");
-    }
+    code = -2;
   }
-
-  // Remove installation folder from system path.
-  printf("Registry: Open Key: HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\n");
-  if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment", 0, KEY_SET_VALUE | KEY_QUERY_VALUE, &hKey))
+  else if (
+      printf("Get value of path.\n"),
+      path = calloc(size + sizeof(L'\0'), 1),
+      NULL == path || 0 != RegQueryValueExW(hKey, L"Path", NULL, NULL, (LPBYTE)path, &size))
   {
-    printf("Registry: Check System Path\n");
-    // Get system path.
-    DWORD size = 0;
-    RegQueryValueEx(hKey, L"Path", NULL, NULL, NULL, &size);
-    if (size > 0)
-    {
-      wchar_t *path = calloc(size + sizeof(L'\0'), 1);
-      RegQueryValueEx(hKey, L"Path", NULL, NULL, (LPBYTE)path, &size);
-      if (NULL != path)
-      {
-        BOOL removed = FALSE;
-        pStringBuilderW builder = StringBuilderW_New(size);
-        size_t item_count = 0;
-        wchar_t **items = SplitDelimitedListW(path, &item_count, L';');
-        for (size_t index = 0; index < item_count; ++index)
-        {
-          if (TRUE == wcs_equals(items[index], L"C:\\Program Files\\RunElevate"))
-          {
-            removed = TRUE;
-          }
-          else
-          {
-            StringBuilderW_Append(builder, items[index]);
-            StringBuilderW_Append(builder, L";");
-          }
-        }
-        StringBuilderW_Trim(builder, L';');
-        FreeCommandLineArgsW(&items, &item_count);
-        if (TRUE == removed)
-        {
-          printf("Path Contains Installation Folder\n");
-          wchar_t *new_path = StringBuilderW_GetString(builder);
-          if (NULL != new_path)
-          {
-            // Write to registry.
-            printf("Registry: Back Up System Path as \"PATH_BACKUP\"\n");
-            if (ERROR_SUCCESS == RegSetValueEx(hKey, L"PATH_BACKUP", 0, REG_EXPAND_SZ, (BYTE *)path, (DWORD)((1 + wcslen(path)) * sizeof(wchar_t))))
-            {
-            }
-            else
-            {
-              printf("Error: Failed to back up system path.\n");
-            }
-            printf("Registry: Remove Installation Folder From System Path\n");
-            // RegDeleteValue(hKey, L"Path");
-            if (ERROR_SUCCESS == RegSetValueEx(hKey, L"Path", 0, REG_EXPAND_SZ, (BYTE *)new_path, (DWORD)((1 + wcslen(new_path)) * sizeof(wchar_t))))
-            {
-              printf("Refresh Environment\n");
-              // Issue with Ansi/Unicode processes. Send both to refresh environment.
-              SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM) "Environment", SMTO_ABORTIFHUNG, 1000, NULL);
-              SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 1000, NULL);
-            }
-            else
-            {
-              printf("Error: Failed to remove installation folder to system path.\n");
-            }
-            free(new_path);
-          }
-        }
-        else
-        {
-          printf("Path Does Not Contain Installation Folder\n");
-        }
-        StringBuilderW_Delete(&builder);
-        free(path);
-      }
-    }
-    RegCloseKey(hKey);
+    code = -3;
   }
   else
   {
-    printf("Error: Failed to open registry key for system path.\n");
+    wchar_t *new_path = RemoveFromDelimitedListW(path, L';', L"C:\\Program Files\\RunElevate");
+    if (NULL == new_path)
+    {
+      printf("System path does not contain installation folder.\n");
+    }
+    else if (
+        printf("Remove installation folder from system path.\n"),
+        RegSetValueExW(hKey, L"PATH_BACKUP_U", 0, REG_EXPAND_SZ, (BYTE *)path, (DWORD)((1 + wcslen(path)) * sizeof(wchar_t))),
+        0 != RegSetValueExW(hKey, L"Path", 0, REG_EXPAND_SZ, (BYTE *)new_path, (DWORD)((1 + wcslen(new_path)) * sizeof(wchar_t))))
+    {
+      code = -4;
+    }
+    else if (
+        printf("Refresh environment.\n"),
+        // Issue with Ansi/Unicode processes. Send both to refresh environment.
+        SendMessageTimeoutA(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM) "Environment", SMTO_ABORTIFHUNG, 1000, NULL),
+        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 1000, NULL),
+        0)
+    {
+    }
+
+    memory_free(&new_path);
   }
 
-  printf("Uninstallation Complete\n");
+  memory_free(&path);
+  RegCloseKey(hKey);
+
+  if (0 != code)
+  {
+    PrintLastError(code);
+  }
+
+  return code;
+}
+
+int main(void)
+{
+  int code = 0;
+
+  printf("Delete installation files and folder.\n");
+  DeleteInstallationFiles();
+  DeleteSystemAliases();
+  RemoveFromSystemPath();
+
+  if (0 == code)
+  {
+    printf("\nUninstallation Successful\n");
+  }
+  else
+  {
+    printf("\nErrors During Uninstallation\n");
+    printf("The uninstaller requires administrator privileges to run.\n");
+    printf("Please write an issue on GitHub if you cannot resolve the problem.\n");
+  }
+
   system("pause");
-  return 0;
+
+  return code;
 }

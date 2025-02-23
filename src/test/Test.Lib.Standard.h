@@ -3,7 +3,7 @@
 
 #include "Test.h"
 
-void Test_Lib_Standard()
+void Test_Lib_Standard(void)
 {
   label("memory_zero");
   {
@@ -104,6 +104,6 @@ void Test_Lib_Standard()
     check("('str1' == NULL) should return NULL", NULL == wcs_concat(L"abc", NULL));
     wchar_t *wstr = wcs_concat(L"abc", L"def");
     check("should return concatenation", wcs_equals(wstr, L"abcdef"));
-    free(wstr);
+    memory_free(&wstr);
   }
 }
