@@ -3,7 +3,16 @@
 #include "Lib.StringBuilderW.h"
 #include "Lib.CommandLineArgs.h"
 
-static int CreateInstallationFiles(void)
+static int DeleteInstallationFiles(void)
+{
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\Elevate.exe");
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\Run.exe");
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\vcruntime140.dll");
+  RemoveDirectoryW(L"C:\\Program Files\\RunElevate");
+  return 0;
+}
+
+static int CopyInstallationFiles(void)
 {
   int code = 0;
 
@@ -175,7 +184,7 @@ int main(void)
 
   DeleteInstallationFiles();
 
-  if (0 != CreateInstallationFiles())
+  if (0 != CopyInstallationFiles())
   {
     code = -1;
   }

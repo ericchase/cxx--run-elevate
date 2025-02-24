@@ -3,6 +3,15 @@
 #include "Lib.StringBuilderW.h"
 #include "Lib.CommandLineArgs.h"
 
+static int DeleteInstallationFiles(void)
+{
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\Elevate.exe");
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\Run.exe");
+  DeleteFileW(L"C:\\Program Files\\RunElevate\\vcruntime140.dll");
+  RemoveDirectoryW(L"C:\\Program Files\\RunElevate");
+  return 0;
+}
+
 static int DeleteSystemAliases(void)
 {
   int code = 0;
